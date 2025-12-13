@@ -1,0 +1,410 @@
+--========================
+-- Matty Hub (FULL SCRIPT)
+--========================
+-- Key: Mattyhubkey123
+-- Discord: https://discord.gg/z6UcX2URfW
+
+-- Services
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+local Workspace = game:GetService("Workspace")
+
+local LocalPlayer = Players.LocalPlayer
+local Camera = Workspace.CurrentCamera
+
+-- Load Rayfield
+local Rayfield = loadstring(game:HttpGet("https://sirius.menu/rayfield"))()
+
+--========================
+-- Window
+--========================
+local Window = Rayfield:CreateWindow({
+    Name = "Matty Hub",
+    LoadingTitle = "Matty Hub",
+    LoadingSubtitle = "Checking key...",
+    ToggleUIKeybind = "K",
+    ConfigurationSaving = {
+        Enabled = true,
+        FolderName = "MattyHubConfigs",
+        FileName = "Default"
+    },
+    Discord = {
+        Enabled = true,
+        Invite = "z6UcX2URfW",
+        RememberJoins = true
+    },
+    KeySystem = true,
+    KeySettings = {
+        Title = "Matty Hub Key",
+        Subtitle = "Enter Key",
+        FileName = "MattyHubKey",
+        SaveKey = true,
+        GrabKeyFromSite = false,
+        Key = {"Mattyhubkey123"}
+    }
+})
+
+--========================
+-- Helpers
+--========================
+local function getCharacter()
+    return LocalPlayer.Character
+end
+
+local function getHumanoid()
+    local c = getCharacter()
+    return c and c:FindFirstChildOfClass("Humanoid")
+end
+
+local function getHRP(char)
+    return char and char:FindFirstChild("HumanoidRootPart")
+end
+
+--========================
+-- STATE
+--========================
+local speedEnabled = false
+local jumpEnabled = false
+local infJumpEnabled = false
+local noclipEnabled = false
+local antiAfkEnabled = true
+
+local aimbotEnabled = false
+local aimbotNearest = false
+local aimbotSelected = false
+
+local espEnabled = false
+local espColor = Color3.fromRGB(255, 0, 0)
+local espTracks = {} -- [player] = {highlight, billboard, label}
+
+--========================
+-- MAIN TAB
+--========================
+local mainTab = Window:CreateTab("Main", "zap")
+
+-- WalkSpeed
+local speedSlider = mainTab:CreateSlider({
+    Name = "WalkSpeed",
+    Range = {0, 500},
+    Increment = 1,
+    CurrentValue = 16,
+    Flag = "SpeedSlider",
+    Callback = function(v)
+        if speedEnabled then
+            local hum = getHumanoid()
+            if hum then hum.WalkSpeed = v end
+        end
+    end
+})
+
+mainTab:CreateToggle({
+    Name = "Speed",
+    CurrentValue = false,
+    Flag = "SpeedToggle",
+    Callback = function(v)
+        speedEnabled = v
+        local hum = getHumanoid()
+        if hum then
+            hum.WalkSpeed = v and speedSlider.CurrentValue or 16
+        end
+    end
+})
+
+-- JumpPower (FIXED)
+local jumpSlider = mainTab:CreateSlider({
+    Name = "JumpPower",
+    Range = {0, 500},
+    Increment = 1,
+    CurrentValue = 50,
+    Flag = "JumpSlider",
+    Callback = function(v)
+        if jumpEnabled then
+            local hum = getHumanoid()
+            if hum then
+                hum.UseJumpPower = true
+                hum.JumpPower = v
+            end
+        end
+    end
+})
+
+mainTab:CreateToggle({
+    Name = "JumpPower",
+    CurrentValue = false,
+    Flag = "JumpToggle",
+    Callback = function(v)
+        jumpEnabled = v
+        local hum = getHumanoid()
+        if hum then
+            hum.UseJumpPower = true
+            hum.JumpPower = v and jumpSlider.CurrentValue or 50
+        end
+    end
+})
+
+mainTab:CreateToggle({
+    Name = "Infinite Jump",
+    CurrentValue = false,
+    Flag = "InfJump",
+    Callback = function(v) infJumpEnabled = v end
+})
+
+mainTab:CreateToggle({
+    Name = "Noclip",
+    CurrentValue = false,
+    Flag = "Noclip",
+    Callback = function(v) noclipEnabled = v end
+})
+
+mainTab:CreateToggle({
+    Name = "Anti-AFK",
+    CurrentValue = true,
+    Flag = "AntiAFK",
+    Callback = function(v) antiAfkEnabled = v end
+})
+
+--========================
+-- TELEPORT TAB
+--========================
+local teleportTab = Window:CreateTab("Teleport", "map-pin")
+
+local function getPlayerList()
+    local t = {}
+    for _, p in ipairs(Players:GetPlayers()) do
+        if p ~= LocalPlayer then table.insert(t, p.Name) end
+    end
+    if #t == 0 then table.insert(t, "No Players") end
+    return t
+end
+
+local tpDropdown = teleportTab:CreateDropdown({
+    Name = "Teleport Target",
+    Options = getPlayerList(),
+    CurrentOption = {},
+    MultipleOptions = false,
+    Flag = "TPDropdown",
+    Callback = function() end
+})
+
+teleportTab:CreateButton({
+    Name = "Teleport",
+    Callback = function()
+        local sel = tpDropdown.CurrentOption[1]
+        local p = sel and Players:FindFirstChild(sel)
+        if p and p.Character then
+            local hrp = getHRP(p.Character)
+            local my = getHRP(getCharacter())
+            if hrp and my then
+                my.CFrame = hrp.CFrame * CFrame.new(0,3,0)
+            end
+        end
+    end
+})
+
+--========================
+-- FIGHTING TAB (AIMBOT)
+--========================
+local fightTab = Window:CreateTab("Fighting", "target")
+
+local function getNames()
+    local n = {}
+    for _, p in ipairs(Players:GetPlayers()) do
+        if p ~= LocalPlayer then table.insert(n, p.Name) end
+    end
+    if #n == 0 then table.insert(n, "No Players") end
+    return n
+end
+
+local aimbotDropdown = fightTab:CreateDropdown({
+    Name = "Aimbot Target",
+    Options = getNames(),
+    CurrentOption = {},
+    MultipleOptions = false,
+    Flag = "AimbotTarget",
+    Callback = function() end
+})
+
+fightTab:CreateToggle({
+    Name = "Aimbot Enabled",
+    CurrentValue = false,
+    Flag = "AimbotEnabled",
+    Callback = function(v) aimbotEnabled = v end
+})
+
+fightTab:CreateToggle({
+    Name = "Aimbot Nearest",
+    CurrentValue = false,
+    Flag = "AimbotNearest",
+    Callback = function(v)
+        aimbotNearest = v
+        if v then aimbotSelected = false end
+    end
+})
+
+fightTab:CreateToggle({
+    Name = "Aimbot Selected",
+    CurrentValue = false,
+    Flag = "AimbotSelected",
+    Callback = function(v)
+        aimbotSelected = v
+        if v then aimbotNearest = false end
+    end
+})
+
+--========================
+-- ESP TAB (FIXED)
+--========================
+local espTab = Window:CreateTab("ESP", "eye")
+
+local function removeESP(p)
+    local t = espTracks[p]
+    if not t then return end
+    if t.highlight then t.highlight:Destroy() end
+    if t.billboard then t.billboard:Destroy() end
+    espTracks[p] = nil
+end
+
+local function applyESP(p)
+    if p == LocalPlayer or espTracks[p] or not p.Character then return end
+    local hrp = getHRP(p.Character)
+    if not hrp then return end
+
+    local hl = Instance.new("Highlight")
+    hl.Adornee = p.Character
+    hl.FillColor = espColor
+    hl.OutlineColor = espColor
+    hl.FillTransparency = 0.6
+    hl.OutlineTransparency = 0.2
+    hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+    hl.Parent = Workspace
+
+    local bb = Instance.new("BillboardGui")
+    bb.Size = UDim2.new(0, 150, 0, 30)
+    bb.StudsOffset = Vector3.new(0, 3.5, 0)
+    bb.AlwaysOnTop = true
+    bb.Adornee = hrp
+    bb.Parent = Workspace.CurrentCamera
+
+    local lbl = Instance.new("TextLabel")
+    lbl.Size = UDim2.new(1,0,1,0)
+    lbl.BackgroundTransparency = 1
+    lbl.Text = p.Name
+    lbl.TextScaled = true
+    lbl.Font = Enum.Font.SourceSansBold
+    lbl.TextStrokeTransparency = 0.5
+    lbl.TextColor3 = espColor
+    lbl.Parent = bb
+
+    espTracks[p] = {highlight = hl, billboard = bb, label = lbl}
+end
+
+espTab:CreateToggle({
+    Name = "ESP Enabled",
+    CurrentValue = false,
+    Flag = "ESPEnabled",
+    Callback = function(v)
+        espEnabled = v
+        if not v then
+            for p in pairs(espTracks) do removeESP(p) end
+        else
+            for _, p in ipairs(Players:GetPlayers()) do
+                if p ~= LocalPlayer then applyESP(p) end
+            end
+        end
+    end
+})
+
+espTab:CreateColorPicker({
+    Name = "ESP Color",
+    Color = espColor,
+    Flag = "ESPColor",
+    Callback = function(c)
+        espColor = c
+        for _, t in pairs(espTracks) do
+            t.highlight.FillColor = c
+            t.highlight.OutlineColor = c
+            t.label.TextColor3 = c
+        end
+    end
+})
+
+--========================
+-- BACKEND
+--========================
+UserInputService.JumpRequest:Connect(function()
+    if infJumpEnabled then
+        local hum = getHumanoid()
+        if hum then hum:ChangeState(Enum.HumanoidStateType.Jumping) end
+    end
+end)
+
+RunService.Stepped:Connect(function()
+    if noclipEnabled then
+        local char = getCharacter()
+        if char then
+            for _, p in ipairs(char:GetDescendants()) do
+                if p:IsA("BasePart") then p.CanCollide = false end
+            end
+        end
+    end
+end)
+
+RunService.RenderStepped:Connect(function()
+    if not aimbotEnabled then return end
+
+    local target
+    if aimbotNearest then
+        local dist = math.huge
+        for _, p in ipairs(Players:GetPlayers()) do
+            if p ~= LocalPlayer and p.Character then
+                local hrp = getHRP(p.Character)
+                if hrp then
+                    local d = (Camera.CFrame.Position - hrp.Position).Magnitude
+                    if d < dist then
+                        dist = d
+                        target = p
+                    end
+                end
+            end
+        end
+    elseif aimbotSelected then
+        local sel = aimbotDropdown.CurrentOption[1]
+        target = sel and Players:FindFirstChild(sel)
+    end
+
+    if target and target.Character then
+        local hrp = getHRP(target.Character)
+        if hrp then
+            Camera.CFrame = CFrame.new(Camera.CFrame.Position, hrp.Position)
+        end
+    end
+end)
+
+task.spawn(function()
+    while task.wait(55) do
+        if antiAfkEnabled then
+            local cf = Camera.CFrame
+            Camera.CFrame = cf * CFrame.new(0,0.0001,0)
+            task.wait(0.1)
+            Camera.CFrame = cf
+        end
+    end
+end)
+
+Players.PlayerAdded:Connect(function(p)
+    tpDropdown:Refresh(getPlayerList())
+    aimbotDropdown:Refresh(getNames())
+    if espEnabled then
+        p.CharacterAdded:Wait()
+        applyESP(p)
+    end
+end)
+
+Players.PlayerRemoving:Connect(function(p)
+    tpDropdown:Refresh(getPlayerList())
+    aimbotDropdown:Refresh(getNames())
+    removeESP(p)
+end)
+
+Rayfield:LoadConfiguration()
