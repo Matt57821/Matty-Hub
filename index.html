@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Matty Hub – Get Key</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', Arial, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: radial-gradient(circle at left, #6a5cff, transparent 60%),
+                  radial-gradient(circle at right, #4fd1ff, transparent 60%),
+                  linear-gradient(135deg, #6f7cff, #7b5cff);
+    }
+
+    .container {
+      text-align: center;
+      width: 100%;
+      max-width: 420px;
+    }
+
+    h1 {
+      margin-bottom: 18px;
+      font-size: 42px;
+      letter-spacing: 2px;
+      color: #000;
+    }
+
+    .card {
+      background: rgba(120, 140, 200, 0.55);
+      backdrop-filter: blur(18px);
+      padding: 30px 26px 34px;
+      border-radius: 28px;
+      box-shadow: 0 30px 70px rgba(0,0,0,0.35);
+    }
+
+    .desc {
+      font-size: 14px;
+      margin-bottom: 26px;
+      color: #000;
+      opacity: 0.8;
+    }
+
+    .btn {
+      width: 100%;
+      padding: 16px;
+      margin: 16px 0;
+      border-radius: 18px;
+      border: none;
+      font-size: 18px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease;
+    }
+
+    .btn:hover { transform: translateY(-2px); box-shadow: 0 12px 30px rgba(0,0,0,0.35); }
+    .btn:disabled { opacity: 0.65; cursor: default; }
+
+    .youtube { background: #d84b5a; color: #000; }
+    .discord { background: #4f63ff; color: #000; }
+    .getkey { background: #39d353; color: #000; display: none; }
+
+    .loader {
+      display: none;
+      margin: 22px auto 10px;
+      width: 46px;
+      height: 46px;
+      border: 5px solid rgba(255,255,255,0.3);
+      border-top: 5px solid #fff;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .status {
+      font-size: 14px;
+      margin-top: 10px;
+      color: #000;
+      opacity: 0.8;
+    }
+
+    .key-box {
+      display: none;
+      margin-top: 20px;
+      padding: 16px;
+      border-radius: 18px;
+      background: rgba(255,255,255,0.25);
+      color: #000;
+    }
+
+    .key-title {
+      color: #2eff7e;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+
+    .key-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      font-weight: 600;
+    }
+
+    .copy-btn {
+      padding: 6px 10px;
+      border-radius: 10px;
+      border: none;
+      cursor: pointer;
+      background: #000;
+      color: #fff;
+      font-size: 12px;
+    }
+
+    .copy-status {
+      margin-top: 8px;
+      font-size: 12px;
+      color: #000;
+      opacity: 0.75;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>MATTY HUB</h1>
+    <div class="card">
+      <div class="desc">Complete the steps below to verify and unlock your key.</div>
+
+      <button class="btn youtube" id="ytBtn" onclick="subscribed()">Subscribe on YouTube</button>
+      <button class="btn discord" id="dcBtn" onclick="joinedDiscord()">Join our Discord Server</button>
+      <button class="btn getkey" id="getKeyBtn" onclick="startVerify()">Get key!</button>
+
+      <div class="loader" id="loader"></div>
+      <div class="status" id="status"></div>
+
+      <div class="key-box" id="keyBox">
+        <div class="key-title">Your Key</div>
+        <div class="key-row">
+          <span id="keyText">Mattyhubkey123</span>
+          <button class="copy-btn" onclick="copyKey()">Copy</button>
+        </div>
+        <div class="copy-status" id="copyStatus"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let yt = false;
+    let dc = false;
+
+    function subscribed() {
+      yt = true;
+      const btn = document.getElementById('ytBtn');
+      btn.textContent = 'Done!';
+      btn.disabled = true;
+      window.open('https://www.youtube.com/@MattHub-rblx', '_blank');
+      checkReady();
+    }
+
+    function joinedDiscord() {
+      dc = true;
+      const btn = document.getElementById('dcBtn');
+      btn.textContent = 'Done!';
+      btn.disabled = true;
+      window.open('https://discord.gg/YZPjFnyNW7', '_blank');
+      checkReady();
+    }
+
+    function checkReady() {
+      if (yt && dc) {
+        document.getElementById('getKeyBtn').style.display = 'block';
+      }
+    }
+
+    function startVerify() {
+      document.getElementById('getKeyBtn').style.display = 'none';
+      document.getElementById('loader').style.display = 'block';
+      document.getElementById('status').textContent = 'Preparing for the key...';
+
+      setTimeout(() => {
+        document.getElementById('loader').style.display = 'none';
+        document.getElementById('status').textContent = '';
+        document.getElementById('keyBox').style.display = 'block';
+      }, 3000);
+    }
+
+    function copyKey() {
+      const key = document.getElementById('keyText').textContent;
+      const status = document.getElementById('copyStatus');
+
+      if (navigator.clipboard && window.isSecureContext) {
+        navigator.clipboard.writeText(key).then(() => {
+          status.textContent = 'Copied to clipboard!';
+        }).catch(() => {
+          fallbackCopy(key, status);
+        });
+      } else {
+        fallbackCopy(key, status);
+      }
+    }
+
+    function fallbackCopy(text, statusEl) {
+      const tempInput = document.createElement('textarea');
+      tempInput.value = text;
+      document.body.appendChild(tempInput);
+      tempInput.select();
+      try {
+        document.execCommand('copy');
+        statusEl.textContent = 'Copied (manual method)!';
+      } catch (err) {
+        statusEl.textContent = 'Copy failed. Please select and copy manually.';
+      }
+      document.body.removeChild(tempInput);
+    }
+  </script>
+</body>
+</html>
